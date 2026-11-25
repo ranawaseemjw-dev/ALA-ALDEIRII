@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="ur">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#120826" />
+  <title>Tenmin AI — Urdu + Multi-Language Voice Tutor</title>
+  <style>
+    :root {
+      --bg-top: #13072e;
+      --bg-mid: #220e4a;
+      --bg-bot: #090314;
+      --ghost-1: #38bdf8;
+      --ghost-2: #0284c7;
+      --ghost-glow: rgba(56, 189, 248, 0.5);
+      --accent: #a855f7;
+      --pink: #ec4899;
+      --danger: #ef4444;
+      --success: #22c55e;
+      --gold: #facc15;
+      --text: #ffffff;
+      --muted: #cbd5e1;
+      --glass: rgba(255, 255, 255, 0.08);
+      --border: rgba(255, 255, 255, 0.16);
+    }
+    body.theme-pink { --ghost-1: #ff77c8; --ghost-2: #db2777; --ghost-glow: rgba(255, 119, 200, 0.5); }
+    body.theme-mint { --ghost-1: #34d399; --ghost-2: #059669; --ghost-glow: rgba(52, 211, 153, 0.5); }
+    body.theme-gold { --ghost-1: #fbbf24; --ghost-2: #d97706; --ghost-glow: rgba(251, 191, 36, 0.5); }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; user-select: none; }
+
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Nastaliq Urdu", sans-serif;
+      background: radial-gradient(circle at 50% 22%, var(--bg-mid), var(--bg-top) 55%, var(--bg-bot) 100%);
+      color: var(--text);
+      min-height: 100dvh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+    }
+
+    .app-shell {
+      width: 100%;
+      max-width: 450px;
+      height: 100dvh;
+      max-height: 920px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 14px 16px 18px;
+      position: relative;
+    }
+
+    .top-bar { display: flex; align-items: center; justify-content: space-between; gap: 6px; z-index: 10; }
+    .brand-left { display: flex; align-items: center; gap: 8px; }
+    .logo {
+      font-size: 1.35rem; font-weight: 900; letter-spacing: -0.3px;
+      background: linear-gradient(90deg, #fff, #c4b5fd);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .lang-picker {
+      background: rgba(168, 85, 247, 0.25); border: 1px solid rgba(192, 132, 252, 0.5);
+      color: #fff; padding: 6px 10px; border-radius: 999px; font-size: 0.78rem; font-weight: 700; cursor: pointer; outline: none;
+    }
+    .lang-picker option { background: #1e1035; color: #fff; }
+    .top-actions { display: flex; align-items: center; gap: 6px; }
+    .stat-pill {
+      background: var(--glass); border: 1px solid var(--border); padding: 5px 9px;
+      border-radius: 999px; font-size: 0.76rem; font-weight: 800; color: var(--gold);
+    }
+    .mini-btn {
+      width: 35px; height: 35px; border-radius: 50%; border: 1px solid var(--border);
+      background: var(--glass); color: #fff; font-size: 0.95rem; display: grid; place-items: center; cursor: pointer;
+    }
+    .mini-btn.active { background: rgba(56, 189, 248, 0.3); border-color: #38bdf8; }
+
+    .topic-bar { display: flex; gap: 7px; overflow-x: auto; padding: 8px 0 2px; scrollbar-width: none; }
+    .topic-bar::-webkit-scrollbar { display: none; }
+    .topic-chip {
+      flex: 0 0 auto; padding: 6px 12px; border-radius: 999px; background: var(--glass);
+      border: 1px solid var(--border); color: var(--muted); font-size: 0.78rem; font-weight: 700; cursor: pointer;
+    }
+    .topic-chip.active {
+      background: linear-gradient(135deg, var(--accent), var(--pink)); color: #fff; border-color: transparent;
+      box-shadow: 0 4px 14px rgba(236, 72, 153, 0.35);
+    }
+
+    .stage { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; gap: 6px; }
+    .call-timer { font-size: 0.75rem; font-weight: 700; color: #94a3b8; letter-spacing: 1px; }
+
+    .pulse-ring {
+      position: absolute; width: 210px; height: 210px; border-radius: 50%;
+      border: 2px solid var(--ghost-1); opacity: 0; pointer-events: none;
+    }
+    .stage.listening .pulse-ring { opacity: 0.8; animation: ripple 1.3s infinite ease-out; }
+    .stage.speaking .pulse-ring { opacity: 0.65; border-color: #f472b6; animation: ripple 0.85s infinite ease-out; }
+    @keyframes ripple { 0% { transform: scale(0.85); opacity: 0.85; } 100% { transform: scale(1.42); opacity: 0; } }
+
+    .ghost-wrap {
+      width: 164px; height: 180px; display: grid; place-items: center; position: relative;
+      animation: floatIdle 3.2s ease-in-out infinite; cursor: pointer;
+    }
+    .stage.speaking .ghost-wrap { animation: talkBounce 0.34s ease-in-out infinite alternate; }
+    .stage.roasting .ghost-wrap { animation: laughShake 0.22s ease-in-out infinite; }
+    @keyframes floatIdle { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-9px); } }
+    @keyframes talkBounce { 0% { transform: translateY(0) scale(1); } 100% { transform: translateY(-8px) scale(1.05, 0.96); } }
+    @keyframes laughShake { 0%, 100% { transform: rotate(-5deg) scale(1.06); } 50% { transform: rotate(5deg) scale(1.06); } }
+
+    .ghost-body {
+      width: 144px; height: 160px;
+      background: linear-gradient(160deg, var(--ghost-1), var(--ghost-2));
+      border-radius: 75px 75px 24px 24px;
+      box-shadow: 0 20px 45px var(--ghost-glow), inset 0 -14px 22px rgba(0,0,0,0.25), inset 0 10px 18px rgba(255,255,255,0.38);
+      display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative;
+    }
+    .ghost-body::after {
+      content: ""; position: absolute; bottom: -7px; left: 10px; right: 10px; height: 17px;
+      background:
+        radial-gradient(circle at 16% 0%, var(--ghost-2) 13px, transparent 14px),
+        radial-gradient(circle at 50% 0%, var(--ghost-2) 13px, transparent 14px),
+        radial-gradient(circle at 84% 0%, var(--ghost-2) 13px, transparent 14px);
+    }
+
+    .eyes { display: flex; gap: 22px; margin-top: -12px; margin-bottom: 14px; }
+    .eye { width: 26px; height: 32px; background: #0f172a; border-radius: 50%; position: relative; transition: 0.2s; }
+    .eye::after { content: ""; position: absolute; top: 5px; right: 5px; width: 8px; height: 8px; background: #fff; border-radius: 50%; }
+    .mouth { width: 32px; height: 16px; background: #0f172a; border-radius: 0 0 18px 18px; position: relative; overflow: hidden; transition: 0.2s; }
+    .mouth::after { content: ""; position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 16px; height: 7px; background: #fb7185; border-radius: 8px 8px 0 0; }
+
+    .mood-roast .eye { height: 9px; border-radius: 9px; transform: rotate(12deg); }
+    .mood-roast .eye.right { transform: rotate(-12deg); }
+    .mood-roast .mouth { width: 46px; height: 28px; border-radius: 8px 8px 24px 24px; }
+    .mood-shock .eye { width: 32px; height: 36px; }
+    .mood-shock .mouth { width: 22px; height: 26px; border-radius: 50%; }
+    .mood-happy .mouth { width: 40px; height: 20px; border-radius: 4px 4px 22px 22px; }
+
+    .eq-bars { display: flex; align-items: center; gap: 4px; height: 16px; }
+    .eq-bars span { width: 4px; height: 5px; background: var(--ghost-1); border-radius: 4px; }
+    .stage.speaking .eq-bars span { animation: eqDance 0.45s infinite ease-in-out alternate; }
+    .stage.speaking .eq-bars span:nth-child(2) { animation-delay: 0.1s; }
+    .stage.speaking .eq-bars span:nth-child(3) { animation-delay: 0.2s; }
+    .stage.speaking .eq-bars span:nth-child(4) { animation-delay: 0.15s; }
+    .stage.speaking .eq-bars span:nth-child(5) { animation-delay: 0.05s; }
+    @keyframes eqDance { 0% { height: 5px; } 100% { height: 16px; } }
+
+    .status-pill {
+      font-size: 0.76rem; font-weight: 700; padding: 4px 12px; border-radius: 999px;
+      background: rgba(255,255,255,0.1); color: #e2e8f0;
+    }
+
+    .caption-card {
+      background: rgba(15, 23, 42, 0.85); border: 1px solid var(--border);
+      backdrop-filter: blur(14px); border-radius: 20px; padding: 12px 14px;
+      display: flex; flex-direction: column; gap: 6px;
+    }
+    .caption-card.cc-off .main-line, .caption-card.cc-off .urdu-caption { filter: blur(5px); opacity: 0.35; }
+
+    .caption-top { display: flex; justify-content: space-between; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .speaker-tag { font-size: 0.72rem; font-weight: 800; letter-spacing: 0.6px; text-transform: uppercase; color: #38bdf8; }
+    .speaker-tag.roast { color: #f472b6; }
+    .speaker-tag.user { color: #4ade80; }
+
+    .pronounce-group { display: flex; gap: 5px; flex-wrap: wrap; }
+    .hear-target-btn {
+      background: rgba(250, 204, 21, 0.16); border: 1px solid rgba(250, 204, 21, 0.45);
+      color: #fde047; font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px; cursor: pointer;
+    }
+    .urdu-btn { background: rgba(34, 197, 94, 0.16); border: 1px solid rgba(74, 222, 128, 0.45); color: #86efac; }
+
+    .main-line { font-size: 0.94rem; line-height: 1.38; font-weight: 600; color: #fff; min-height: 1.3em; }
+    .urdu-caption { direction: rtl; text-align: right; font-size: 1.02rem; line-height: 1.5; color: #bbf7d0; font-weight: 600; min-height: 1.4em; }
+
+    .target-box {
+      display: flex; justify-content: space-between; align-items: center; gap: 10px;
+      background: rgba(168, 85, 247, 0.16); border: 1px dashed rgba(192, 132, 252, 0.5);
+      border-radius: 12px; padding: 8px 11px;
+    }
+    .urdu-hint { font-size: 0.8rem; color: #e9d5ff; line-height: 1.3; flex: 1; }
+    .target-phrase { text-align: right; }
+    .native-word { display: block; font-size: 1.08rem; font-weight: 800; color: #fde047; }
+    .roman-word { display: block; font-size: 0.75rem; color: #cbd5e1; font-weight: 600; }
+
+    .type-row { display: none; gap: 7px; margin-top: 4px; }
+    .type-row.open { display: flex; }
+    .type-input {
+      flex: 1; background: rgba(255,255,255,0.1); border: 1px solid var(--border);
+      border-radius: 12px; padding: 9px 12px; color: #fff; font-size: 0.88rem; outline: none;
+    }
+    .send-btn { background: var(--success); color: #052e16; font-weight: 800; border: none; border-radius: 12px; padding: 0 14px; cursor: pointer; }
+
+    .controls { display: flex; align-items: center; justify-content: space-between; padding-top: 10px; }
+    .ctrl-item { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+    .ctrl-btn {
+      width: 48px; height: 48px; border-radius: 50%; border: 1px solid var(--border);
+      background: var(--glass); color: #fff; font-size: 1.08rem; display: grid; place-items: center; cursor: pointer;
+    }
+    .ctrl-btn.on { background: rgba(56, 189, 248, 0.28); border-color: #38bdf8; }
+    .mic-btn {
+      width: 66px; height: 66px; background: linear-gradient(145deg, var(--accent), var(--pink));
+      border: none; font-size: 1.45rem; box-shadow: 0 10px 25px rgba(236, 72, 153, 0.45);
+    }
+    .mic-btn.recording { background: var(--danger); animation: micPulse 1s infinite; }
+    @keyframes micPulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.75); }
+      50% { box-shadow: 0 0 0 14px rgba(239, 68, 68, 0); }
+    }
+    .end-btn { background: rgba(239, 68, 68, 0.22); border-color: rgba(239, 68, 68, 0.55); color: #fca5a5; }
+    .ctrl-txt { font-size: 0.7rem; color: var(--muted); font-weight: 600; }
+
+    .modal {
+      position: fixed; inset: 0; background: rgba(8, 3, 18, 0.92); backdrop-filter: blur(10px);
+      display: none; justify-content: center; align-items: center; padding: 20px; z-index: 50;
+    }
+    .modal.show { display: flex; }
+    .modal-box {
+      width: 100%; max-width: 390px; background: #1b0f33; border: 1px solid var(--border);
+      border-radius: 24px; padding: 22px; text-align: center; display: flex; flex-direction: column; gap: 13px;
+    }
+    .primary-btn {
+      background: linear-gradient(135deg, #38bdf8, #a855f7); color: #fff; border: none;
+      border-radius: 14px; padding: 13px; font-size: 0.96rem; font-weight: 800; cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <div class="top-bar">
+      <div class="brand-left">
+        <span class="logo">Tenmin</span>
+        <select class="lang-picker" id="langSelect">
+          <option value="arabic">🇸🇦 Urdu → Arabic</option>
+          <option value="chinese">🇨🇳 Urdu → Chinese</option>
+          <option value="japanese">🇯🇵 Urdu → Japanese</option>
+          <option value="korean">🇰🇷 Urdu → Korean</option>
+          <option value="english">🇬🇧 Urdu → English</option>
+          <option value="spanish">🇪🇸 Urdu → Spanish</option>
+        </select>
+      </div>
+      <div class="top-actions">
+        <span class="stat-pill" id="xpBadge">⚡ 0 XP</span>
+        <button class="mini-btn active" id="autoLoopBtn" title="Auto Next">🔄</button>
+        <button class="mini-btn" id="themeBtn" title="Theme">🎨</button>
+        <button class="mini-btn" id="typeBtn" title="Type Mode">⌨️</button>
+      </div>
+    </div>
+
+    <div class="topic-bar" id="topicBar"></div>
+
+    <div class="stage" id="stage">
+      <div class="call-timer" id="callTimer">LIVE CALL • 00:00</div>
+      <div class="pulse-ring"></div>
+      <div class="ghost-wrap" id="ghostTap" title="Tap to hear">
+        <div class="ghost-body" id="ghostBody">
+          <div class="eyes"><div class="eye left"></div><div class="eye right"></div></div>
+          <div class="mouth"></div>
+        </div>
+      </div>
+      <div class="eq-bars"><span></span><span></span><span></span><span></span><span></span></div>
+      <div class="status-pill" id="statusPill">Mic dabakar bolein</div>
+    </div>
+
+    <div class="caption-card" id="captionCard">
+      <div class="caption-top">
+        <span class="speaker-tag" id="speakerTag">TENMIN GHOST</span>
+        <div class="pronounce-group">
+          <button class="hear-target-btn urdu-btn" id="hearUrduBtn">🇵🇰 اردو</button>
+          <button class="hear-target-btn" id="hearTargetBtn">🔊 Normal</button>
+          <button class="hear-target-btn" id="hearSlowBtn">🐢 Slow</button>
+        </div>
+      </div>
+      <div class="main-line" id="mainLine">Ready ho? Mic dabao!</div>
+      <div class="urdu-caption" id="urduCaption">مائیک دبا کر بولیں</div>
+      <div class="target-box">
+        <div class="urdu-hint" id="urduHint">Topic choose karein</div>
+        <div class="target-phrase">
+          <span class="native-word" id="nativeWord">—</span>
+          <span class="roman-word" id="romanWord"></span>
+        </div>
+      </div>
+      <div class="type-row" id="typeRow">
+        <input type="text" class="type-input" id="typeInput" placeholder="Yahan likhein..." />
+        <button class="send-btn" id="sendBtn">Send</button>
+      </div>
+    </div>
+
+    <div class="controls">
+      <div class="ctrl-item"><button class="ctrl-btn" id="replayBtn">🔊</button><span class="ctrl-txt">Repeat</span></div>
+      <div class="ctrl-item"><button class="ctrl-btn on" id="ccBtn">CC</button><span class="ctrl-txt">Subtitles</span></div>
+      <div class="ctrl-item"><button class="ctrl-btn mic-btn" id="micBtn">🎙️</button><span class="ctrl-txt" id="micTxt">Bolein</span></div>
+      <div class="ctrl-item"><button class="ctrl-btn" id="nextBtn">⏭️</button><span class="ctrl-txt">Agla</span></div>
+      <div class="ctrl-item"><button class="ctrl-btn end-btn" id="endBtn">✕</button><span class="ctrl-txt">End</span></div>
+    </div>
+  </div>
+
+  <div class="modal" id="summaryModal">
+    <div class="modal-box">
+      <h2>Tenmin Call Report 👻</h2>
+      <p id="summaryText" style="color:#cbd5e1; font-size:0.94rem; line-height:1.55;"></p>
+      <button class="primary-btn" id="restartBtn">Nayi Call Shuru Karein</button>
+    </div>
+  </div>
+
+  <script>
+    const curriculum = {
+      arabic: {
+        speechLang: "ar-SA",
+        lessons: [
+          {
+            topic: "👋 Greetings",
+            question: "Arabic mein 'Hello / Peace be upon you' kaise kehte hain?",
+            urduText: "عربی میں 'ہیلو / سلام' کیسے کہتے ہیں؟",
+            urdu: "اردو: ہیلو / سلام",
+            native: "السَّلَامُ عَلَيْكُم",
+            roman: "As-salamu alaykum",
+            keywords: ["السلام", "سلام", "salam", "assalamu", "alaykum", "marhaba", "مرحبا"],
+            roast: "Aray bhai, sirf 'Hello' bol kar kaam nahi chalega! Arabic mein 'As-salamu alaykum' bolo!",
+            roastUrdu: "ارے بھائی، صرف 'ہیلو' بول کر کام نہیں چلے گا! عربی میں 'السلام علیکم' بولو!",
+            success: "MashaAllah! 'As-salamu alaykum' ekdum sahi bola!",
+            successUrdu: "ماشاءاللہ! 'السلام علیکم' بالکل صحیح بولا!"
+          },
+          {
+            topic: "🥔 Potato Roast",
+            question: "Batao, Arabic mein 'Potato / Aloo' ko kya kehte hain? Desi accent mat lagana!",
+            urduText: "عربی میں 'آلو' کو کیا کہتے ہیں؟ دیسی لہجہ مت لگانا!",
+            urdu: "اردو: آلو",
+            native: "بَطَاطَا",
+            roman: "Bataata",
+            keywords: ["بطاطا", "بطاطس", "batata", "bataata", "batatis"],
+            roast: "Haha! 'Potato' ko Arabic accent mein bol diya! Sahi word hai 'Bataata'!",
+            roastUrdu: "ہاہا! پوٹیٹو کو عربی لہجے میں بول دیا! صحیح لفظ 'بطاطا' ہے!",
+            success: "Zabardast! 'Bataata' bilkul sahi!",
+            successUrdu: "زبردست! 'بطاطا' بالکل صحیح!"
+          },
+          {
+            topic: "☕ Shukriya",
+            question: "Chai mil gayi! Ab Arabic mein 'Shukriya' bolo!",
+            urduText: "چائے مل گئی! اب عربی میں 'شکریہ' بولو!",
+            urdu: "اردو: شکریہ",
+            native: "شُكْرًا",
+            roman: "Shukran",
+            keywords: ["شكر", "شكرا", "شُكْرًا", "shukran", "shukra"],
+            roast: "Urdu mein 'Shukriya' nahi, Arabic mein 'Shukran' bolo!",
+            roastUrdu: "اردو میں 'شکریہ' نہیں، عربی میں 'شکرًا' بولو!",
+            success: "Wah! 'Shukran' ekdum fit!",
+            successUrdu: "واہ! 'شکرًا' بالکل فٹ!"
+          }
+        ]
+      },
+      chinese: {
+        speechLang: "zh-CN",
+        lessons: [
+          {
+            topic: "👋 Ni Hao",
+            question: "Chinese mein kisi ko 'Hello' kaise bologe?",
+            urduText: "چینی میں کسی کو 'ہیلو' کیسے بولو گے؟",
+            urdu: "اردو: ہیلو / سلام",
+            native: "你好",
+            roman: "Nǐ hǎo (Ni hao)",
+            keywords: ["你好", "nihao", "ni hao", "nǐ hǎo"],
+            roast: "Itna aasan sawal aur ghalti? 'Ni hao' bolo!",
+            roastUrdu: "اتنا آسان سوال اور غلطی؟ 'نی ہاؤ' بولو!",
+            success: "Ni hao! Bohot acha bola!",
+            successUrdu: "نی ہاؤ! بہت اچھا بولا!"
+          },
+          {
+            topic: "🥔 Potato Roast",
+            question: "Chinese mein 'Potato' ko kya kehte hain? Accent mat lagana!",
+            urduText: "چینی میں 'آلو' کو کیا کہتے ہیں؟ لہجہ مت لگانا!",
+            urdu: "اردو: آلو",
+            native: "土豆",
+            roman: "Tǔ dòu (Tu dou)",
+            keywords: ["土豆", "tudou", "tu dou", "tǔ dòu"],
+            roast: "Potato ko Chinese accent mein bol diya! Sahi word hai 'Tu dou'!",
+            roastUrdu: "پوٹیٹو کو چینی لہجے میں بول دیا! صحیح لفظ 'تو دو' ہے!",
+            success: "Haan! 'Tu dou' bilkul sahi!",
+            successUrdu: "ہاں! 'تو دو' بالکل صحیح!"
+          }
+        ]
+      },
+      japanese: {
+        speechLang: "ja-JP",
+        lessons: [
+          {
+            topic: "🍜 Gohan",
+            question: "Japanese mein 'Khaana / Meal' ko kya kehte hain?",
+            urduText: "جاپانی میں 'کھانا' کو کیا کہتے ہیں؟",
+            urdu: "اردو: کھانا",
+            native: "ごはん",
+            roman: "Gohan",
+            keywords: ["ごはん", "ご飯", "gohan"],
+            roast: "Ulta seedha mat bolo—Japanese mein khaana 'Gohan' hota hai!",
+            roastUrdu: "الٹا سیدھا مت بولو—جاپانی میں کھانا 'گوہان' ہوتا ہے!",
+            success: "Sugoi! 'Gohan' sahi bola!",
+            successUrdu: "سوگوئی! 'گوہان' صحیح بولا!"
+          },
+          {
+            topic: "🙏 Arigatou",
+            question: "Japanese mein 'Shukriya' kaise keht
